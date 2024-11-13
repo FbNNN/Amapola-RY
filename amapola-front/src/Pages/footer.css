@@ -1,11 +1,23 @@
+/* Estilo general del footer */
 footer {
   background-color: #f0c4c2; /* El color que prefieres */
   color: #333;  /* Asegura que el texto sea legible con el fondo */
   text-align: center;  /* Centra el contenido */
+  padding: 20px 0; /* Espaciado vertical */
+  margin-top: auto; /* Empuja el footer al fondo si el contenido es corto */
+  width: 100%; /* Asegura que el footer ocupe todo el ancho */
+  position: relative; /* Para evitar que se desborde en pantallas pequeñas */
 }
 
+/* Estilo para los enlaces dentro del footer */
+footer a {
+  color: #333;  /* Color gris oscuro para los enlaces */
+  text-decoration: underline;  /* Subraya los enlaces */
+}
+
+/* Cambia el color de los enlaces al pasar el mouse */
 footer a:hover {
-  color: #333;  /* Color gris oscuro al pasar el mouse */
+  color: #000;  /* Color más oscuro al pasar el mouse */
   text-decoration: underline;  /* Subraya los enlaces al pasar el mouse */
 }
 
@@ -13,10 +25,21 @@ footer a:hover {
 footer .text-center {
   border-top: 2px solid black;  /* Línea negra arriba del texto */
   padding-top: 10px;  /* Espaciado superior para el texto */
+  font-size: 14px; /* Tamaño de fuente más pequeño */
 }
 
-footer a {
-  color: #333;  /* Color gris oscuro al pasar el mouse */
-  text-decoration: underline;  /* Subraya los enlaces al pasar el mouse */
+/* Asegurarse que el footer siempre esté en la parte inferior en caso de poco contenido */
+html, body {
+  height: 100%;
+  margin: 0;
 }
 
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Hace que el contenedor ocupe toda la altura de la pantalla */
+}
+
+.main-content {
+  flex: 1; /* El contenido principal ocupa el espacio disponible, empujando el footer hacia abajo */
+}

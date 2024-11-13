@@ -1,0 +1,22 @@
+/* Asegúrate de que todo el contenido ocupe el 100% de la altura de la pantalla */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Esto asegura que la app ocupe el 100% de la altura de la ventana */
+}
+
+.main-content {
+  flex: 1; /* Esto hará que el contenido principal ocupe el espacio restante */
+}
+
+footer {
+  background-color: #f8f9fa; /* Asegúrate de que el footer tenga un color de fondo */
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+}

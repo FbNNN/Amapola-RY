@@ -18,4 +18,35 @@ export const getProductos = async () => {
     }
 };
 
+// Función para obtener las compras desde la API
+export const getCompras = async (page, limit) => {
+    try {
+        const response = await axios.get(`/compras`, {
+            params: {
+                page,
+                limit
+            }
+        });
+        return {
+            comprasData: response.data.compras, // Asumir que la respuesta tiene una propiedad "compras"
+            totalPages: response.data.totalPages // Asumir que la respuesta tiene una propiedad "totalPages"
+        };
+    } catch (error) {
+        throw new Error('Error al obtener las compras: ' + error.message);
+    }
+};
+export const getVentas = async (page = 1, limit = 10) => {
+    try {
+        const response = await api.get('/ventas', {
+            params: {
+                page,
+                limit
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error('Error al obtener ventas: ' + error.message);
+    }
+};
+
 export default api; // Exporta la instancia de axios para ser utilizada en otros módulos
