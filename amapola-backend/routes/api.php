@@ -6,7 +6,9 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\AdministradorController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\GananciaController;
 /*
+
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
@@ -26,5 +28,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::apiResource('productos', ProductoController::class);
 Route::apiResource('administradores', AdministradorController::class);
 Route::apiResource('compras', CompraController::class);
-Route::apiResource('ventas', VentaController::class);
+
+
+Route::get('/ganancias', [GananciaController::class, 'calcularGanancias']);
+
+Route::get('/ventas', [VentaController::class, 'index']);
+
 

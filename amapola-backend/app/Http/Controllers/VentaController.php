@@ -9,11 +9,23 @@ use Illuminate\Http\Request;
 class VentaController extends Controller
 {
     // Obtener todas las ventas
-    public function index()
-    {
-        $ventas = Venta::with('producto')->get();
-        return response()->json($ventas);
-    }
+   public function index(Request $request)
+   {
+       // Obtener el año actual
+       $year = date('Y');
+
+       // Verificar si el parámetro de mes existe, si no, asignar el mes actual
+       $month = $request->input('month', date('m'));
+
+       // Filtrar ventas del año actual y del mes seleccionado
+       $ventas = Venta::with('producto')
+                       ->whereYear('fechaVenta', $year)
+                       ->whereMonth('fechaVenta', $month)
+                       ->get();
+
+       return response()->json($ventas);
+   }
+
 
     // Registrar una nueva venta
     public function store(Request $request)
@@ -49,4 +61,23 @@ class VentaController extends Controller
         $venta->delete();
         return response()->json(['message' => 'Venta eliminada']);
     }
+    public function calcularGanancias(Request $request)
+       {
+           try {
+               $mes = $request->query('mes');
+               $anio = $request->query('anio');
+
+               // Realizar el cálculo de ganancias
+               $ganancias = DB::table('venta as v')
+                   ->join('producto as p', 'v.producto_id', '=', 'p.id')
+                   ->select(DB::raw('SUM(v.precioVenta - p.CostePromedio) AS ganancias'))
+                   ->whereMonth('v.fechaVenta', $mes)
+                   ->whereYear('v.fechaVenta', $anio)
+                   ->first();
+
+               return response()->json(['ganancias' => $ganancias->ganancias]);
+           } catch (\Exception $e) {
+               return response()->json(['error' => 'Error al calcular ganancias: ' . $e->getMessage()], 500);
+           }
+       }
 }
