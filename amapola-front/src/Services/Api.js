@@ -19,34 +19,57 @@ export const getProductos = async () => {
 };
 
 // Función para obtener las compras desde la API
-export const getCompras = async (page, limit) => {
+export const getCompras = async (page = 1, limit = 10) => {
     try {
-        const response = await axios.get(`/compras`, {
+        const response = await api.get('/compras', {
             params: {
                 page,
                 limit
             }
         });
+        // Ajustar la estructura esperada de la respuesta
         return {
-            comprasData: response.data.compras, // Asumir que la respuesta tiene una propiedad "compras"
-            totalPages: response.data.totalPages // Asumir que la respuesta tiene una propiedad "totalPages"
+            comprasData: response.data.comprasData || [], // Lista de compras
+            totalPages: response.data.totalPages || 1 // Total de páginas
         };
     } catch (error) {
         throw new Error('Error al obtener las compras: ' + error.message);
     }
 };
-export const getVentas = async (page = 1, limit = 10) => {
+
+// Función para obtener las ventas desde la API
+export const getVentas = async (month) => {
     try {
         const response = await api.get('/ventas', {
             params: {
-                page,
-                limit
+                month
             }
         });
         return response.data;
     } catch (error) {
-        throw new Error('Error al obtener ventas: ' + error.message);
+        console.error('Error al obtener ventas:', error);
+        throw error;
     }
+};
+
+// Función para obtener un producto por ID
+export const getProductoById = async (productoId) => {
+    try {
+        const response = await api.get(`/producto/${productoId}`); // Endpoint para obtener el producto por ID
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener el producto:', error);
+        throw error; // Re-lanzamos el error para que sea manejado por el componente
+    }
+};
+export const getGanancias = (month, year) => {
+    return fetch(`/api/ganancias?mes=${month}&anio=${year}`)
+        .then(response => response.json())
+        .then(data => data)
+        .catch(error => {
+            console.error("Error al obtener ganancias:", error);
+            return { ganancias: 0 };
+        });
 };
 
 export default api; // Exporta la instancia de axios para ser utilizada en otros módulos

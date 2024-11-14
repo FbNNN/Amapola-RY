@@ -1,125 +1,201 @@
 import React, { useEffect, useState } from 'react';
-import { getVentas, getProductos } from '../Services/Api'; // Asegúrate de importar correctamente las funciones
+import { getVentas } from '../Services/Api'; // Asegúrate de tener una función para obtener las ventas
+import './Ventas.css';
 
 function Ventas() {
-    const [ventas, setVentas] = useState([]); // Estado para almacenar las ventas
-    const [productos, setProductos] = useState({}); // Para almacenar los productos por su ID
-    const [page, setPage] = useState(1); // Página actual
-    const [totalPages, setTotalPages] = useState(1); // Total de páginas
+    const [ventas, setVentas] = useState([]);  // Almacena todas las ventas
+    const [paginatedVentas, setPaginatedVentas] = useState([]);  // Almacena las ventas de la página actual
+    const [mesSeleccionado, setMesSeleccionado] = useState(new Date().getMonth() + 1); // Mes actual
+    const [currentPage, setCurrentPage] = useState(1);  // Página actual
+    const [ganancias, setGanancias] = useState(null);  // Almacena las ganancias calculadas
+    const [mostrarGanancias, setMostrarGanancias] = useState(false); // Estado para mostrar/ocultar ganancias
+    const ventasPorPagina = 10;  // Número de ventas por página
+    const anioSeleccionado = new Date().getFullYear(); // Año actual
 
+    // Cargar ventas al montar el componente o cambiar el mes
     useEffect(() => {
-        // Obtener las ventas con paginación
-        getVentas(page, 10) // Aquí 10 es el límite de elementos por página
-            .then(response => {
-                console.log('Respuesta de ventas:', response); // Depuración de la respuesta
+        cargarVentas(mesSeleccionado, anioSeleccionado);
+        if (mostrarGanancias) {
+            calcularGanancias(mesSeleccionado, anioSeleccionado);
+        }
+    }, [mesSeleccionado, mostrarGanancias]); // Asegurarse de que las ganancias se calculen cuando el estado cambie
 
-                const ventasData = response?.ventasData || []; // Asegúrate de que ventasData sea un arreglo vacío si no existe
-                const totalPages = response?.totalPages || 1; // Default a 1 si no hay totalPages
-
-                // Verifica si ventasData es un arreglo
-                if (Array.isArray(ventasData)) {
-                    setVentas(ventasData); // Establecer las ventas
-                    setTotalPages(totalPages); // Establecer el total de páginas
-
-                    // Si las ventas existen, obtenemos los productos
-                    const productoIds = ventasData.map(venta => venta.producto_id);
-                    return getProductos(productoIds);
-                } else {
-                    console.error('ventasData no es un arreglo', ventasData);
-                    return [];
-                }
+    // Cargar ventas desde el API
+    const cargarVentas = (month, year) => {
+        getVentas(month, year)
+            .then(data => {
+                console.log("Datos de ventas:", data);
+                setVentas(data);
+                setPaginatedVentas(data.slice(0, ventasPorPagina)); // Solo mostrar las primeras ventas
             })
-            .then(productosData => {
-                console.log('Respuesta de productos:', productosData); // Depuración de la respuesta
+            .catch(error => console.error("Error al cargar ventas:", error));
+    };
 
-                // Si productosData es válido, lo mapeamos a un objeto de productos
-                if (Array.isArray(productosData)) {
-                    const productosMap = productosData.reduce((acc, producto) => {
-                        acc[producto.id] = producto.nombre;
-                        return acc;
-                    }, {});
-                    setProductos(productosMap);
-                } else {
-                    console.error('productosData no es un arreglo', productosData);
-                }
+    // Calcular las ganancias desde el API
+    const calcularGanancias = (month, year) => {
+        fetch(`http://localhost:8000/api/ganancias?mes=${month}&anio=${year}`)
+            .then(response => response.json())
+            .then(data => {
+                setGanancias(data.ganancias);
             })
             .catch(error => {
-                console.error('Error al obtener ventas o productos:', error.message);
+                console.error("Error al calcular ganancias:", error);
             });
-    }, [page]); // Recargamos cuando cambie la página
-
-    // Función para manejar la paginación
-    const handleNextPage = () => {
-        if (page < totalPages) {
-            setPage(page + 1);
-        }
     };
 
-    const handlePreviousPage = () => {
-        if (page > 1) {
-            setPage(page - 1);
-        }
+    // Manejar el cambio de mes
+    const handleMesChange = (e) => {
+        setMesSeleccionado(e.target.value);
+        setCurrentPage(1);  // Resetear la página a la 1 cuando el mes cambie
     };
 
-    // Paginación
-    const pageNumbers = [];
-    for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-    }
+    // Función para formatear el número sin decimales y con separador de miles
+    const formatearGanancias = (ganancias) => {
+        const numeroGanancias = parseFloat(ganancias);
 
-    // Verifica si hay ventas antes de renderizar
-    if (!ventas || ventas.length === 0) {
-        return <div>Cargando ventas...</div>;
-    }
+        // Si ganancias no es un número válido, retorna '0'
+        if (isNaN(numeroGanancias)) {
+            return '0';
+        }
+
+        // Formatear el número sin decimales y con separadores de miles
+        return numeroGanancias.toLocaleString('es-ES', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    };
+
+    // Cambiar de página
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        const indexOfLastVenta = pageNumber * ventasPorPagina;
+        const indexOfFirstVenta = indexOfLastVenta - ventasPorPagina;
+        setPaginatedVentas(ventas.slice(indexOfFirstVenta, indexOfLastVenta));
+    };
+
+    // Alternar la visibilidad de las ganancias
+    const toggleGanancias = () => {
+        setMostrarGanancias(!mostrarGanancias); // Alternar entre mostrar/ocultar ganancias
+    };
+
+    // Obtener el rango de páginas a mostrar (3 páginas máximo)
+    const getPageNumbers = () => {
+        const totalPages = Math.ceil(ventas.length / ventasPorPagina);
+        let startPage = Math.max(1, currentPage - 1);
+        let endPage = Math.min(totalPages, currentPage + 1);
+
+        // Ajustar el rango para que no se pase de los límites
+        if (totalPages > 3) {
+            if (currentPage === 1) {
+                endPage = Math.min(3, totalPages);
+            } else if (currentPage === totalPages) {
+                startPage = Math.max(totalPages - 2, 1);
+            }
+        }
+
+        let pages = [];
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
 
     return (
         <div>
             <h1>Ventas</h1>
-            <table className="table table-striped">
+
+            {/* Selector de Mes */}
+            <div className="filter-container">
+                <label>Filtrar por mes:</label>
+                <select value={mesSeleccionado} onChange={handleMesChange}>
+                    {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                            {new Date(0, i).toLocaleString('es-ES', { month: 'long' })}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div>
+                {/* Botón para mostrar/ocultar ganancias */}
+                <div>
+                    <button type="button" class="btn btn-outline-secondary" onClick={() => setMostrarGanancias(!mostrarGanancias)}>
+                        {mostrarGanancias ? 'Ocultar Ganancias' : 'Mostrar Ganancias'}
+                    </button>
+
+                    {mostrarGanancias && ganancias !== null && (
+                        <div className="ganancias-container">
+                            <h3>Ganancias del mes: ${formatearGanancias(ganancias)}</h3>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Tabla de Ventas */}
+            <table className="ventas-table">
                 <thead>
                     <tr>
+                        <th>ID Venta</th>
                         <th>Producto</th>
                         <th>Cantidad Vendida</th>
                         <th>Precio Venta</th>
+                        <th>Fecha Venta</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {ventas.map(venta => (
-                        <tr key={venta.idVenta}>
-                            <td>{productos[venta.producto_id] || 'Cargando...'}</td>
-                            <td>{venta.cantidadVendida}</td>
-                            <td>{venta.precioVenta}</td>
+                    {paginatedVentas.length > 0 ? (
+                        paginatedVentas.map((venta) => (
+                            <tr key={venta.idVenta}>
+                                <td>{venta.idVenta}</td>
+                                <td>{venta.producto ? venta.producto.nombre : 'Sin nombre'}</td>
+                                <td>{venta.cantidadVendida}</td>
+                                <td>{venta.precioVenta}</td>
+                                <td>{venta.fechaVenta}</td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="5">No hay ventas disponibles</td>
                         </tr>
-                    ))}
+                    )}
                 </tbody>
             </table>
 
-            {/* Paginación */}
+            {/* Paginación con Estilo Bootstrap */}
             <nav aria-label="Page navigation example">
                 <ul className="pagination">
-                    <li className="page-item">
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                         <a
                             className="page-link"
                             href="#"
                             aria-label="Previous"
-                            onClick={() => page > 1 && handlePreviousPage()}
+                            onClick={() => handlePageChange(currentPage - 1)}
                         >
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
-                    {pageNumbers.slice(0, 3).map((number) => (
-                        <li key={number} className={`page-item ${page === number ? 'active' : ''}`}>
-                            <a className="page-link" href="#" onClick={() => setPage(number)}>
-                                {number}
+
+                    {getPageNumbers().map(page => (
+                        <li
+                            key={page}
+                            className={`page-item ${currentPage === page ? 'active' : ''}`}
+                        >
+                            <a
+                                className="page-link"
+                                href="#"
+                                onClick={() => handlePageChange(page)}
+                            >
+                                {page}
                             </a>
                         </li>
                     ))}
-                    <li className="page-item">
+
+                    <li className={`page-item ${currentPage * ventasPorPagina >= ventas.length ? 'disabled' : ''}`}>
                         <a
                             className="page-link"
                             href="#"
                             aria-label="Next"
-                            onClick={() => page < totalPages && handleNextPage()}
+                            onClick={() => handlePageChange(currentPage + 1)}
                         >
                             <span aria-hidden="true">&raquo;</span>
                         </a>
