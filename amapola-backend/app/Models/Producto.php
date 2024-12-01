@@ -14,6 +14,7 @@ class Producto extends Model
 
     // Clave primaria
     protected $primaryKey = 'id';
+    public $timestamps = false;  // Desactiva los timestamps
 
     // Campos que se pueden asignar de forma masiva
     protected $fillable = [

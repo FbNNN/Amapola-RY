@@ -16,19 +16,37 @@ class ProductoController extends Controller
 
     // Crear un nuevo producto
     public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'nombre' => 'required|string|max:150',
-            'precioVentaAprox' => 'required|integer',
-            'cantidad' => 'required|integer',
-            'CodigoDeBarra' => 'required|string|max:255|unique:productos', // Asegúrate que el nombre de la tabla sea 'productos'
-            'CostePromedio' => 'nullable|string|max:45',
+{
+    // Validar los datos
+    $validatedData = $request->validate([
+        'nombre' => 'required|string|max:150',
+        'precioVentaAprox' => 'required|integer|min:0', // Asegura que el precio sea no negativo
+        'cantidad' => 'required|integer|min:0', // La cantidad debe ser no negativa
+        'CodigoDeBarra' => 'required|string|max:255|unique:productos', // Asegúrate que 'productos' sea el nombre correcto de la tabla
+        'CostePromedio' => 'nullable|numeric|min:0', // CostePromedio puede ser null o un número positivo
+    ]);
+
+    try {
+        // Crear el producto
+        $producto = Producto::create([
+            'nombre' => $validatedData['nombre'],
+            'precioVentaAprox' => $validatedData['precioVentaAprox'],
+            'cantidad' => $validatedData['cantidad'],
+            'CodigoDeBarra' => $validatedData['CodigoDeBarra'],
+            'CostePromedio' => $validatedData['CostePromedio'] ?? null, // Manejo de valores opcionales
         ]);
 
-        // Crear el producto
-        $producto = Producto::create($validatedData);
-        return response()->json($producto, 201);
+        return response()->json([
+            'message' => 'Producto creado con éxito',
+            'data' => $producto,
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error al crear el producto',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     // Obtener un producto por ID
     public function show($id)

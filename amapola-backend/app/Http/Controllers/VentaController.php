@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Venta;
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use DB;
 
 class VentaController extends Controller
 {
@@ -61,6 +62,50 @@ class VentaController extends Controller
         $venta->delete();
         return response()->json(['message' => 'Venta eliminada']);
     }
+
+    public function venderProducto(Request $request)
+    {
+        // Validación de los datos del request
+        $validatedData = $request->validate([
+            'producto_id' => 'required|exists:producto,id', // Verificar que el producto exista
+            'cantidadVendida' => 'required|integer|min:1', // Verificar que la cantidad sea positiva
+            'precioVenta' => 'required|numeric|min:0', // Verificar que el precio sea un número positivo
+        ]);
+
+        // Buscar el producto en la base de datos
+        $producto = Producto::findOrFail($validatedData['producto_id']);
+
+        // Verificar si hay suficiente inventario
+        if ($producto->cantidad < $validatedData['cantidadVendida']) {
+            return response()->json(['error' => 'No hay suficiente inventario'], 400);
+        }
+
+        // Reducir la cantidad del producto en inventario
+        $producto->cantidad -= $validatedData['cantidadVendida'];
+        $producto->save();
+
+        // Registrar la venta en la tabla 'ventas'
+        $venta = new Venta();
+        $venta->producto_id = $producto->id;
+        $venta->cantidadVendida = $validatedData['cantidadVendida'];
+        $venta->precioVenta = $validatedData['precioVenta'];
+        $venta->fechaVenta = now(); 
+
+        // Devolver la respuesta
+        return response()->json([
+            'message' => 'Producto vendido con éxito',
+            'venta' => $venta,
+            'producto_actualizado' => $producto
+        ], 200);
+    }
+
+    
+
+
+
+
+
+
     public function calcularGanancias(Request $request)
        {
            try {
